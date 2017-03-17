@@ -93,6 +93,10 @@ const float C3[3][3] = {
 float *WLarray;           // buffer for containing real time wavelength data
 float *baseWLarray;       // buffer for containing baseline wavelength
 
+// *** Shape sensing coefficients *** //
+float *est_xz_coeff;
+float *est_yz_coeff;
+
 // *** TCP Connection declarations *** //
 // TCP socket pointers for Interrogator
 struct sockaddr_in serv_addr;
@@ -326,8 +330,21 @@ int main(int argc, char* argv[]) {
     int WLarrayLen=12;
     WLarray = (float*) malloc(sizeof(float)*WLarrayLen);
     baseWLarray = (float*) malloc(sizeof(float)*WLarrayLen);
+
     memset(WLarray, 0, sizeof(float)*12);
     memset(baseWLarray, 0, sizeof(float)*12);
+#ifdef FOURTH_POLY
+    est_xz_coeff = (float*) malloc(sizeof(float)*3);
+    est_yz_coeff = (float*) malloc(sizeof(float)*3);
+    memset(est_yz_coeff, 0, sizeof(float)*3);
+    memset(est_xz_coeff, 0, sizeof(float)*3);
+#endif
+#ifdef FIFTH_POLY
+    est_xz_coeff = (float*) malloc(sizeof(float)*4);
+    est_yz_coeff = (float*) malloc(sizeof(float)*4);
+    memset(est_yz_coeff, 0, sizeof(float)*4);
+    memset(est_xz_coeff, 0, sizeof(float)*4);
+#endif
 
 #ifdef CONNECT2NEEDLE
     // initialize socket comm. to interrogator
@@ -351,19 +368,37 @@ int main(int argc, char* argv[]) {
     while (true) {
         if (commCounter % 10 == 0) { 
             memset(WLarray, 0, sizeof(float)*12);
+#ifdef FOURTH_POLY
+            memset(est_yz_coeff, 0, sizeof(float)*3);
+            memset(est_xz_coeff, 0, sizeof(float)*3);
+#endif
+#ifdef FIFTH_POLY
+            memset(est_yz_coeff, 0, sizeof(float)*4);
+            memset(est_xz_coeff, 0, sizeof(float)*4);
+#endif
+
             readWavelength(WLarray,WLarrayLen);
+            getNeedleShape(WLarray, WLarrayLen, baseWLarray, 
+                           est_yz_coeff, est_xz_coeff);
             
             int len = snprintf(NULL, 0, "%.8f,%.8f,%.8f,%.8f,%.8f,%.8f\n",
-                                       1.01234567f,1.01234567f,1.01234567f,
-                                       1.01234567f,1.01234567f,1.01234567f);
+                                       (float)-1*est_xz_coeff[0]+1.0f,
+                                       (float)-1*est_xz_coeff[1]+1.0f,
+                                       (float)-1*est_xz_coeff[2]+1.0f,
+                                       (float)est_yz_coeff[0]+1.0f,
+                                       (float)est_yz_coeff[1]+1.0f,
+                                       (float)est_yz_coeff[2]+1.0f);
             if (!(str = (char*) malloc((len + 1) * sizeof(char))))
             return EXIT_FAILURE;
 
             len = snprintf(str, len + 1, "%.8f,%.8f,%.8f,%.8f,%.8f,%.8f\n",
-                                       1.01234567f,1.01234567f,1.01234567f,
-                                       1.01234567f,1.01234567f,1.01234567f);
-            free(str);
-            printWLs(WLarray, 12);
+                                       (float)-1*est_xz_coeff[0]+1.0f,
+                                       (float)-1*est_xz_coeff[1]+1.0f,
+                                       (float)-1*est_xz_coeff[2]+1.0f,
+                                       (float)est_yz_coeff[0]+1.0f,
+                                       (float)est_yz_coeff[1]+1.0f,
+                                       (float)est_yz_coeff[2]+1.0f);
+            printWLs(WLarray, WLarrayLen);
 
 //          // put the data string into buffer and send it out
 //          char *data2send; // calculate the length of buffer with 11*#floats-1
@@ -374,6 +409,7 @@ int main(int argc, char* argv[]) {
             write_result = write(newHoloSocketfd, str, 65);
             if (write_result < 0) error("ERROR writing to socket");
 #endif
+            free(str);
 //          free(data2send);
         }
         commCounter ++;

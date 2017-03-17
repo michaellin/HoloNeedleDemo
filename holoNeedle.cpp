@@ -6,8 +6,8 @@
  */
 
 // *** Macro parameters for activating/inactivating different components *** //
-#define NEEDLE
-#define HOLOLENS
+#define CONNECT2NEEDLE
+#define CONNECT2HOLOLENS
 
 // *** Macro parameters for activating/inactivating different test prints *** //
 // Following for printing FBG values a loop rate
@@ -207,7 +207,7 @@ int readWavelength(float *inWLArray, int arrLen) {
     n = read(sockfd,bufferSkip,DATA_LENGTH);
     if (n < 0) 
          error("ERROR reading from socket");
-    free(buffer_size);
+    free(bufferSkip);
 
     // read the data into bytes buffer
     char *buffer;
@@ -364,7 +364,7 @@ int main(int argc, char* argv[]) {
     printf("Starting main loop");
     while (true) {
         string myString;
-        if (commCounter % 20 == 0) { 
+        if (commCounter % 10 == 0) { 
             memset(WLarray, 0, sizeof(float)*12);
 #ifdef FOURTH_POLY
             memset(est_yz_coeff, 0, sizeof(float)*3);
@@ -375,7 +375,8 @@ int main(int argc, char* argv[]) {
             memset(est_xz_coeff, 0, sizeof(float)*4);
 #endif
             readWavelength(WLarray,WLarrayLen);
-            getNeedleShape(WLarray,WLarrayLen,baseWLarray,est_yz_coeff,est_xz_coeff);
+            printWLs(WLarray, WLarrayLen);
+            //getNeedleShape(WLarray,WLarrayLen,baseWLarray,est_yz_coeff,est_xz_coeff);
 
             int write_result;
             stringstream ss;
@@ -394,11 +395,12 @@ int main(int argc, char* argv[]) {
             char *data2send; // calculate the length of buffer with 11*#floats-1
             data2send = (char *) malloc(sizeof(char) * (65));
             strncpy(data2send, myString.c_str(), sizeof(char)*65);
-            write_result = write(newHoloSocketfd, data2send, 65);
-            if (write_result < 0) error("ERROR writing to socket");
-            printWLs(baseWLarray, WLarrayLen);
+            //write_result = write(newHoloSocketfd, data2send, 65);
+            //if (write_result < 0) error("ERROR writing to socket");
             free(data2send);
         }
+        usleep(1000);
+        commCounter++;
     }
     return 0;
 }
@@ -410,7 +412,7 @@ void signal_handler(int signum) {
     switch (signum) {
         case SIGINT:
             // free all allocated buffers 
-            free(baseWL_array);
+            free(baseWLarray);
             free(WLarray);
             free(est_yz_coeff);
             free(est_xz_coeff);

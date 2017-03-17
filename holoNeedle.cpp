@@ -30,6 +30,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <string.h>
+#include <stdarg.h>
 #include <iostream>
 #include <sstream>
 
@@ -92,9 +93,6 @@ const float C3[3][3] = {
 float *WLarray;           // buffer for containing real time wavelength data
 float *baseWLarray;       // buffer for containing baseline wavelength
 
-float *est_xz_coeff;      // shape sensing coefficient for xz plane
-float *est_yz_coeff;      // shape sensing coefficient for yz plane
-
 // *** TCP Connection declarations *** //
 // TCP socket pointers for Interrogator
 struct sockaddr_in serv_addr;
@@ -114,6 +112,7 @@ void getNeedleShape(float *inWLArray, int arrLen,
                       float *in_est_xz_coeff);
 void printWLs(float *inWLArray, int arrLen);
 void signal_handler(int signum);
+//string string_format(const string fmt, ...);
 void error(const char *msg);
 
 
@@ -330,20 +329,6 @@ int main(int argc, char* argv[]) {
     memset(WLarray, 0, sizeof(float)*12);
     memset(baseWLarray, 0, sizeof(float)*12);
 
-    // allocate shape coefficient arrays
-#ifdef FOURTH_POLY
-    est_xz_coeff = (float*) malloc(sizeof(float)*3);
-    est_yz_coeff = (float*) malloc(sizeof(float)*3);
-    memset(est_xz_coeff, 0, sizeof(float)*3);
-    memset(est_yz_coeff, 0, sizeof(float)*3);
-#endif
-#ifdef FIFTH_POLY
-    est_xz_coeff = (float*) malloc(sizeof(float)*4);
-    est_yz_coeff = (float*) malloc(sizeof(float)*4);
-    memset(est_xz_coeff, 0, sizeof(float)*4);
-    memset(est_yz_coeff, 0, sizeof(float)*4);
-#endif
-
 #ifdef CONNECT2NEEDLE
     // initialize socket comm. to interrogator
     initInterrogator();
@@ -360,47 +345,39 @@ int main(int argc, char* argv[]) {
     // local variable definitions
     // counter for sending data to HoloLens at lower rate
     int commCounter = 0;
+    char *str;
 
     printf("Starting main loop");
     while (true) {
-        string myString;
         if (commCounter % 10 == 0) { 
             memset(WLarray, 0, sizeof(float)*12);
-#ifdef FOURTH_POLY
-            memset(est_yz_coeff, 0, sizeof(float)*3);
-            memset(est_xz_coeff, 0, sizeof(float)*3);
-#endif
-#ifdef FIFTH_POLY
-            memset(est_yz_coeff, 0, sizeof(float)*4);
-            memset(est_xz_coeff, 0, sizeof(float)*4);
-#endif
             readWavelength(WLarray,WLarrayLen);
-            printWLs(WLarray, WLarrayLen);
-            //getNeedleShape(WLarray,WLarrayLen,baseWLarray,est_yz_coeff,est_xz_coeff);
+            
+            int len = snprintf(NULL, 0, "%.8f,%.8f,%.8f,%.8f,%.8f,%.8f\n",
+                                       1.01234567f,1.01234567f,1.01234567f,
+                                       1.01234567f,1.01234567f,1.01234567f);
+            if (!(str = (char*) malloc((len + 1) * sizeof(char))))
+            return EXIT_FAILURE;
 
+            len = snprintf(str, len + 1, "%.8f,%.8f,%.8f,%.8f,%.8f,%.8f\n",
+                                       1.01234567f,1.01234567f,1.01234567f,
+                                       1.01234567f,1.01234567f,1.01234567f);
+            free(str);
+            printWLs(WLarray, 12);
+
+//          // put the data string into buffer and send it out
+//          char *data2send; // calculate the length of buffer with 11*#floats-1
+//          data2send = (char *) malloc(sizeof(char) * (65));
+//          strncpy(data2send, myString.c_str(), sizeof(char)*65);
+#ifdef CONNECT2HOLOLENS
             int write_result;
-            stringstream ss;
-            ss.unsetf(ios::floatfield);
-            ss.precision(8);
-            ss << fixed;
-            ss << 1.01234567f <<"," 
-               << 1.01234567f <<","
-               << 1.01234567f <<","
-               << 1.01234567f <<","
-               << 1.01234567f <<","
-               << 1.01234567f << endl;
-            string myString = ss.str();
-
-            // put the data string into buffer and send it out
-            char *data2send; // calculate the length of buffer with 11*#floats-1
-            data2send = (char *) malloc(sizeof(char) * (65));
-            strncpy(data2send, myString.c_str(), sizeof(char)*65);
-            //write_result = write(newHoloSocketfd, data2send, 65);
-            //if (write_result < 0) error("ERROR writing to socket");
-            free(data2send);
+            write_result = write(newHoloSocketfd, str, 65);
+            if (write_result < 0) error("ERROR writing to socket");
+#endif
+//          free(data2send);
         }
+        commCounter ++;
         usleep(1000);
-        commCounter++;
     }
     return 0;
 }
@@ -414,8 +391,6 @@ void signal_handler(int signum) {
             // free all allocated buffers 
             free(baseWLarray);
             free(WLarray);
-            free(est_yz_coeff);
-            free(est_xz_coeff);
 
             printf("Ending ...\n");
             close(holoSocketfd);
@@ -424,6 +399,7 @@ void signal_handler(int signum) {
             break;
     }
 }
+
 void error(const char *msg)
 {
     perror(msg);

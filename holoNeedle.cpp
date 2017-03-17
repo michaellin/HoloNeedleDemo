@@ -54,7 +54,6 @@ typedef struct data
 
 // *** Matrix Constants ***//
 // Pseudo-inverse matrix for curvature polynomials 
-/*
 #ifdef FOURTH_POLY
 const float pinvA[3][4] = {
     {0.000217013888889, -0.000217013888889, -0.000217013888889,  0.000217013888889},
@@ -70,25 +69,23 @@ const float pinvA[4][3] = {
 #endif
 
 // Calibration matrices for wavelength to curvature reading. 
+// C1 is for the first triplet of gratings close to the needle base
+// C2 is for the middle triplet of gratings
+// C3 is for the distal triplet of gratings
 const float C1[3][3] ={
    	{0.000204950507949441, 0.00121646436986137, 0},
   	{-0.000995644401992136, -0.000537433208215571, 0},
    	{0.00115328503288612, -0.000607264513515554, 0}};
-
-
 
 const float C2[3][3] = {
    	{0.000279227750906997, 0.00168804977004751, 0},
   	{-0.000956617541852464, -0.000339882891191607, 0}, 
    	{0.00150548652510142, -0.000374190927814751, 0}};
 
-
-
 const float C3[3][3] = {
    	{-0.000274220554606033, 0.00384379872980169, 0},
  	{-0.00265350320879051, 0.00008339400787445, 0},
    	{0.00229380432011879, -0.000955844410493895, 0}};
-*/
 
 
 // *** Module variable definitions *** //
@@ -112,6 +109,9 @@ struct hostent *holoserver;
 // *** Function prototypes *** //
 void initInterrogator();
 int readWavelength(float *inWLArray, int arrLen);
+void getNeedleShape(float *inWLArray, int arrLen,
+                      float *inbaseWL_array, float *in_est_yz_coeff, 
+                      float *in_est_xz_coeff);
 void printWLs(float *inWLArray, int arrLen);
 void signal_handler(int signum);
 void error(const char *msg);
@@ -248,7 +248,19 @@ int readWavelength(float *inWLArray, int arrLen) {
 }
 
 
-void get_needle_shape(float *inWLArray, int arrLen,
+/***
+ *  function: getNeedleShape
+ *  param: inWLArray       - input buffer where real wavelength are contained.
+ *         arrLen          - input buffer allocated size.
+ *         inbaseWL_array  - input baseline wavelength.
+ *         in_est_yz_coeff - input shape coefficients in xz plane.
+ *         in_est_xz_coeff - input shape coefficients in yz plane.
+ *  description: this function takes in an array of wavelength readings
+ *  and uses calibration information to turn them into shape coefficients. 
+ *  Changes: 
+ *      03/16/2017 - Michael L. re-writing all code
+*/
+void getNeedleShape(float *inWLArray, int arrLen,
                       float *inbaseWL_array, float *in_est_yz_coeff, 
                       float *in_est_xz_coeff) {
   float *dWL;
@@ -256,7 +268,7 @@ void get_needle_shape(float *inWLArray, int arrLen,
 
   for(int i=0; i<arrLen; i++)
   {
-	dWL[i]=inWLArray[i]-tempbaseWL_array[i];
+	dWL[i]=inWLArray[i]-inbaseWL_array[i];
   } 
  
    // Find curvatures
@@ -273,18 +285,18 @@ void get_needle_shape(float *inWLArray, int arrLen,
         0                                         };
 
   // Fit into polynomial using pinvA and find the polynomial coefficients
-  temp_est_xz_coeff[0] = pinvA[0][0]*curv_xz[0] + pinvA[0][1]*curv_xz[1] + pinvA[0][2]*curv_xz[2] + pinvA[0][3]*curv_xz[3];
-  temp_est_xz_coeff[1] = pinvA[1][0]*curv_xz[0] + pinvA[1][1]*curv_xz[1] + pinvA[1][2]*curv_xz[2] + pinvA[1][3]*curv_xz[3];
-  temp_est_xz_coeff[2] = pinvA[2][0]*curv_xz[0] + pinvA[2][1]*curv_xz[1] + pinvA[2][2]*curv_xz[2] + pinvA[2][3]*curv_xz[3];
+  in_est_xz_coeff[0] = pinvA[0][0]*curv_xz[0] + pinvA[0][1]*curv_xz[1] + pinvA[0][2]*curv_xz[2] + pinvA[0][3]*curv_xz[3];
+  in_est_xz_coeff[1] = pinvA[1][0]*curv_xz[0] + pinvA[1][1]*curv_xz[1] + pinvA[1][2]*curv_xz[2] + pinvA[1][3]*curv_xz[3];
+  in_est_xz_coeff[2] = pinvA[2][0]*curv_xz[0] + pinvA[2][1]*curv_xz[1] + pinvA[2][2]*curv_xz[2] + pinvA[2][3]*curv_xz[3];
 #ifdef FIFTH_POLY
-  temp_est_xz_coeff[3] = pinvA[3][0]*curv_xz[0] + pinvA[3][1]*curv_xz[1] + pinvA[3][2]*curv_xz[2] + pinvA[3][3]*curv_xz[3];
+  in_est_xz_coeff[3] = pinvA[3][0]*curv_xz[0] + pinvA[3][1]*curv_xz[1] + pinvA[3][2]*curv_xz[2] + pinvA[3][3]*curv_xz[3];
 #endif
 
-  temp_est_yz_coeff[0] = pinvA[0][0]*curv_yz[0] + pinvA[0][1]*curv_yz[1] + pinvA[0][2]*curv_yz[2] + pinvA[0][3]*curv_yz[3];
-  temp_est_yz_coeff[1] = pinvA[1][0]*curv_yz[0] + pinvA[1][1]*curv_yz[1] + pinvA[1][2]*curv_yz[2] + pinvA[1][3]*curv_yz[3];
-  temp_est_yz_coeff[2] = pinvA[2][0]*curv_yz[0] + pinvA[2][1]*curv_yz[1] + pinvA[2][2]*curv_yz[2] + pinvA[2][3]*curv_yz[3];
+  in_est_yz_coeff[0] = pinvA[0][0]*curv_yz[0] + pinvA[0][1]*curv_yz[1] + pinvA[0][2]*curv_yz[2] + pinvA[0][3]*curv_yz[3];
+  in_est_yz_coeff[1] = pinvA[1][0]*curv_yz[0] + pinvA[1][1]*curv_yz[1] + pinvA[1][2]*curv_yz[2] + pinvA[1][3]*curv_yz[3];
+  in_est_yz_coeff[2] = pinvA[2][0]*curv_yz[0] + pinvA[2][1]*curv_yz[1] + pinvA[2][2]*curv_yz[2] + pinvA[2][3]*curv_yz[3];
 #ifdef FIFTH_POLY
-  temp_est_yz_coeff[3] = pinvA[3][0]*curv_yz[0] + pinvA[3][1]*curv_yz[1] + pinvA[3][2]*curv_yz[2] + pinvA[3][3]*curv_yz[3];
+  in_est_yz_coeff[3] = pinvA[3][0]*curv_yz[0] + pinvA[3][1]*curv_yz[1] + pinvA[3][2]*curv_yz[2] + pinvA[3][3]*curv_yz[3];
 #endif
   
   free(dWL);

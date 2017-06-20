@@ -95,8 +95,7 @@ float *WLarray;           // buffer for containing real time wavelength data
 float *baseWLarray;       // buffer for containing baseline wavelength
 
 // *** Shape sensing coefficients *** //
-float *est_xz_coeff;
-float *est_yz_coeff;
+float *est_coeff;
 
 char *data2send;
 
@@ -118,6 +117,7 @@ void getNeedleShape(float *inWLArray, int arrLen,
                       float *inbaseWL_array, float *in_est_yz_coeff, 
                       float *in_est_xz_coeff);
 void printWLs(float *inWLArray, int arrLen);
+void float2Bytes( float *val, byte *byte_array );
 void signal_handler(int signum);
 //string string_format(const string fmt, ...);
 void error(const char *msg);
@@ -356,7 +356,7 @@ int main(int argc, char* argv[]) {
 
 #ifdef CONNECT2HOLOLENS
     // initialize socket comm. to HoloLens
-    initHoloLensServer(20650);
+    initHoloLensServer(20602);
 #endif
 
     // local variable definitions
@@ -394,7 +394,7 @@ int main(int argc, char* argv[]) {
 }
 
 
-void float2Bytes( float *val, byte *byte_array ) {
+void float2Bytes( float *val, byte *bytes_array ) {
     union {
         float float_variable[16];
         byte temp_array[4*6];
@@ -414,8 +414,7 @@ void signal_handler(int signum) {
             free(baseWLarray);
             free(WLarray);
             free(data2send);
-            free(est_xz_coeff);
-            free(est_yz_coeff);
+            free(est_coeff);
 
             printf("Ending ...\n");
             close(holoSocketfd);

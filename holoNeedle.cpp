@@ -46,6 +46,7 @@ using namespace std;
 
 // *** Typedefs *** //
 typedef unsigned char uchar;
+typedef unsigned char byte;
 // struct definition for saving sensor data
 typedef struct data
 {
@@ -269,8 +270,7 @@ int readWavelength(float *inWLArray, int arrLen) {
  *      03/16/2017 - Michael L. re-writing all code
 */
 void getNeedleShape(float *inWLArray, int arrLen,
-                      float *inbaseWL_array, float *in_est_yz_coeff, 
-                      float *in_est_xz_coeff) {
+                      float *inbaseWL_array, float *in_est_coeff) {
   float *dWL;
   dWL = (float*) malloc(sizeof(float)*12);
 
@@ -293,19 +293,15 @@ void getNeedleShape(float *inWLArray, int arrLen,
         0                                         };
 
   // Fit into polynomial using pinvA and find the polynomial coefficients
-  in_est_xz_coeff[0] = pinvA[0][0]*curv_xz[0] + pinvA[0][1]*curv_xz[1] + pinvA[0][2]*curv_xz[2] + pinvA[0][3]*curv_xz[3];
-  in_est_xz_coeff[1] = pinvA[1][0]*curv_xz[0] + pinvA[1][1]*curv_xz[1] + pinvA[1][2]*curv_xz[2] + pinvA[1][3]*curv_xz[3];
-  in_est_xz_coeff[2] = pinvA[2][0]*curv_xz[0] + pinvA[2][1]*curv_xz[1] + pinvA[2][2]*curv_xz[2] + pinvA[2][3]*curv_xz[3];
-#ifdef FIFTH_POLY
-  in_est_xz_coeff[3] = pinvA[3][0]*curv_xz[0] + pinvA[3][1]*curv_xz[1] + pinvA[3][2]*curv_xz[2] + pinvA[3][3]*curv_xz[3];
-#endif
+  // put xz plane coefficients first
+  in_est_coeff[0] = pinvA[0][0]*curv_xz[0] + pinvA[0][1]*curv_xz[1] + pinvA[0][2]*curv_xz[2] + pinvA[0][3]*curv_xz[3];
+  in_est_coeff[1] = pinvA[1][0]*curv_xz[0] + pinvA[1][1]*curv_xz[1] + pinvA[1][2]*curv_xz[2] + pinvA[1][3]*curv_xz[3];
+  in_est_coeff[2] = pinvA[2][0]*curv_xz[0] + pinvA[2][1]*curv_xz[1] + pinvA[2][2]*curv_xz[2] + pinvA[2][3]*curv_xz[3];
 
-  in_est_yz_coeff[0] = pinvA[0][0]*curv_yz[0] + pinvA[0][1]*curv_yz[1] + pinvA[0][2]*curv_yz[2] + pinvA[0][3]*curv_yz[3];
-  in_est_yz_coeff[1] = pinvA[1][0]*curv_yz[0] + pinvA[1][1]*curv_yz[1] + pinvA[1][2]*curv_yz[2] + pinvA[1][3]*curv_yz[3];
-  in_est_yz_coeff[2] = pinvA[2][0]*curv_yz[0] + pinvA[2][1]*curv_yz[1] + pinvA[2][2]*curv_yz[2] + pinvA[2][3]*curv_yz[3];
-#ifdef FIFTH_POLY
-  in_est_yz_coeff[3] = pinvA[3][0]*curv_yz[0] + pinvA[3][1]*curv_yz[1] + pinvA[3][2]*curv_yz[2] + pinvA[3][3]*curv_yz[3];
-#endif
+  // put yz plane coefficient second
+  in_est_coeff[4] = pinvA[0][0]*curv_yz[0] + pinvA[0][1]*curv_yz[1] + pinvA[0][2]*curv_yz[2] + pinvA[0][3]*curv_yz[3];
+  in_est_coeff[5] = pinvA[1][0]*curv_yz[0] + pinvA[1][1]*curv_yz[1] + pinvA[1][2]*curv_yz[2] + pinvA[1][3]*curv_yz[3];
+  in_est_coeff[6] = pinvA[2][0]*curv_yz[0] + pinvA[2][1]*curv_yz[1] + pinvA[2][2]*curv_yz[2] + pinvA[2][3]*curv_yz[3];
   
   free(dWL);
 }
@@ -339,10 +335,9 @@ int main(int argc, char* argv[]) {
     memset(WLarray, 0, sizeof(float)*12);
     memset(baseWLarray, 0, sizeof(float)*12);
 #ifdef FOURTH_POLY
-    est_xz_coeff = (float*) malloc(sizeof(float)*3);
-    est_yz_coeff = (float*) malloc(sizeof(float)*3);
-    memset(est_yz_coeff, 0, sizeof(float)*3);
-    memset(est_xz_coeff, 0, sizeof(float)*3);
+    est_coeff = (float*) malloc(sizeof(float)*6);
+    //est_yz_coeff = (float*) malloc(sizeof(float)*3);
+    memset(est_coeff, 0, sizeof(float)*6);
 #endif
 #ifdef FIFTH_POLY
     est_xz_coeff = (float*) malloc(sizeof(float)*4);
@@ -374,8 +369,7 @@ int main(int argc, char* argv[]) {
         if (commCounter % 10 == 0) { 
             memset(WLarray, 0, sizeof(float)*12);
 #ifdef FOURTH_POLY
-            memset(est_yz_coeff, 0, sizeof(float)*3);
-            memset(est_xz_coeff, 0, sizeof(float)*3);
+            memset(est_coeff, 0, sizeof(float)*6);
 #endif
 #ifdef FIFTH_POLY
             memset(est_yz_coeff, 0, sizeof(float)*4);
@@ -383,43 +377,13 @@ int main(int argc, char* argv[]) {
 #endif
 
             readWavelength(WLarray,WLarrayLen);
-            getNeedleShape(WLarray, WLarrayLen, baseWLarray, 
-                           est_yz_coeff, est_xz_coeff);
-            int len = snprintf(NULL, 0, "%.8f,%.8f,%.8f,%.8f,%.8f,%.8f\n",
-//                                      1.01234567f,
-//                                      1.01234567f,
-//                                      1.01234567f,
-//                                      1.01234567f,
-//                                      1.01234567f,
-//                                      1.01234567f);
-                                       (float)-1*est_xz_coeff[0]+1.0f,
-                                       (float)-1*est_xz_coeff[1]+1.0f,
-                                       (float)-1*est_xz_coeff[2]+1.0f,
-                                       (float)est_yz_coeff[0]+1.0f,
-                                       (float)est_yz_coeff[1]+1.0f,
-                                       (float)est_yz_coeff[2]+1.0f);
-//          int len=1;
-//        if (!(str = (char*) malloc((len + 1) * sizeof(char))))
-//          return EXIT_FAILURE;
-
-            len = snprintf(data2send, len + 1, "%.8f,%.8f,%.8f,%.8f,%.8f,%.8f\n",
-//                                      1.01234567f,
-//                                      1.01234567f,
-//                                      1.01234567f,
-//                                      1.01234567f,
-//                                      1.01234567f,
-//                                      1.01234567f);
-                                       (float)-1*est_xz_coeff[0]+1.0f,
-                                       (float)-1*est_xz_coeff[1]+1.0f,
-                                       (float)-1*est_xz_coeff[2]+1.0f,
-                                       (float)est_yz_coeff[0]+1.0f,
-                                       (float)est_yz_coeff[1]+1.0f,
-                                       (float)est_yz_coeff[2]+1.0f);
-            //printWLs(WLarray, WLarrayLen);
+            getNeedleShape(WLarray, WLarrayLen, baseWLarray, est_coeff);
+            byte bytes[4*6];
+            float2Bytes(&est_coeff[0], &bytes[0]);
 
 #ifdef CONNECT2HOLOLENS
             int write_result;
-            write_result = write(newHoloSocketfd, data2send, 65);
+            write_result = write(newHoloSocketfd, est_coeff, 4*6);
             if (write_result < 0) error("ERROR writing to socket");
 #endif
         }
@@ -430,6 +394,17 @@ int main(int argc, char* argv[]) {
 }
 
 
+void float2Bytes( float *val, byte *byte_array ) {
+    union {
+        float float_variable[16];
+        byte temp_array[4*6];
+    } u;
+    for (int i = 0; i < 6; i ++) {
+        u.float_variable[i] = val[i];
+    }
+    memcpy(bytes_array, u.temp_array, 4*6);
+}
+
 
 // *** ========== Less important functions ========= *** //
 void signal_handler(int signum) {
@@ -439,6 +414,8 @@ void signal_handler(int signum) {
             free(baseWLarray);
             free(WLarray);
             free(data2send);
+            free(est_xz_coeff);
+            free(est_yz_coeff);
 
             printf("Ending ...\n");
             close(holoSocketfd);

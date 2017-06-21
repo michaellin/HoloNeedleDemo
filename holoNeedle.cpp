@@ -23,6 +23,11 @@
 #define PORT_NUMB "1852"
 #define IP_ADD "10.0.0.126"
 
+// timing 
+#define RT_PRIORITY     (49)
+#define MAX_SAFE_STACK  (8*1024)
+#define NSEC_PER_SEC    (1000000000)
+
 
 // *** General includes *** //
 #include <stdlib.h>
@@ -37,6 +42,11 @@
 // *** Includes for sockets *** //
 #include <sys/types.h> 
 #include <sys/socket.h>
+#include <sys/ipc.h>
+#include <sys/types.h>
+#include <sys/time.h>
+#include <sys/mman.h>
+#include <sched.h>
 #include <netinet/in.h>
 #include <netdb.h> 
 
@@ -140,6 +150,7 @@ void float2Bytes( float *val, byte *byte_array );
 void signal_handler(int signum);
 //string string_format(const string fmt, ...);
 void error(const char *msg);
+void stack_prefault(void);
 
 
 /***
@@ -344,6 +355,27 @@ void printWLs(float *inWLArray, int arrLen) {
 
 
 int main(int argc, char* argv[]) {
+    // Timing declarations
+    struct timespec t;
+    struct sched_param param;
+    int interval = 500000; // 1 nanosecond per tick, 1ms
+
+    // declare ourself as a real time task
+    param.sched_priority = RT_PRIORITY;
+    int result = sched_setscheduler(0, SCHED_FIFO, &param);
+    if(result < 0)
+    {
+        perror("sched_setscheduler failed");
+        exit(-1);
+    }
+
+    // lock all memory spaces
+    if(mlockall(MCL_CURRENT|MCL_FUTURE) == -1)
+    {
+        perror("mlockall failed");
+        exit(-2);
+    }
+
     // setup signal for ctrl-c
     signal(SIGINT, signal_handler);
 
@@ -380,12 +412,23 @@ int main(int argc, char* argv[]) {
     initHoloLensServer(20602);
 #endif
 
-    // local variable definitions
     // counter for sending data to HoloLens at lower rate
     int commCounter = 0;
 
-    printf("Starting main loop\n");
+    // pre-fault our stack
+    stack_prefault();
+    clock_gettime(CLOCK_MONOTONIC ,&t);
+
+    // start after two second
+    printf("Starting loop in 2 seconds ...\n");
+    t.tv_sec++;
+    t.tv_sec++;
+
+    int x = 1;
     while (true) {
+
+      //// wait until next tick
+      //clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
         if (commCounter % 10 == 0) { 
             memset(WLarray, 0, sizeof(float)*12);
 #ifdef FOURTH_POLY
@@ -401,8 +444,10 @@ int main(int argc, char* argv[]) {
             byte bytes[4*6];
             //float2Bytes(&est_coeff[0], &bytes[0]);
             //printf("%f, %f, %f, %f, %f, %f\n", est_coeff[0], est_coeff[1], est_coeff[2], est_coeff[3], est_coeff[4], est_coeff[5]);
-            printf("%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", WLarray[0], WLarray[1], WLarray[2], WLarray[3], WLarray[4], WLarray[5],
-                                                                        WLarray[6], WLarray[7], WLarray[8], WLarray[9], WLarray[10], WLarray[11]);
+            //printf("%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", WLarray[0], WLarray[1], WLarray[2], WLarray[3], WLarray[4], WLarray[5],
+            //                                                            WLarray[6], WLarray[7], WLarray[8], WLarray[9], WLarray[10], WLarray[11]);
+            //printf("%f\n", WLarray[11]);
+
 #ifdef CONNECT2HOLOLENS
             int write_result;
             write_result = write(newHoloSocketfd, est_coeff, 4*6);
@@ -410,7 +455,17 @@ int main(int argc, char* argv[]) {
 #endif
         }
         commCounter ++;
+
+        // calculate next tick
+      //t.tv_nsec += interval;
+      //while (t.tv_nsec >= NSEC_PER_SEC)
+      //{
+      //    t.tv_nsec -= NSEC_PER_SEC;
+      //    t.tv_sec++;
+      //}
+
     }
+    printf("%d\n", x); 
     return 0;
 }
 
@@ -442,6 +497,13 @@ void signal_handler(int signum) {
             exit(-1);
             break;
     }
+}
+
+void stack_prefault(void)
+{
+    unsigned char dummy[MAX_SAFE_STACK];
+    memset(dummy, 0, MAX_SAFE_STACK);
+    return;
 }
 
 void error(const char *msg)

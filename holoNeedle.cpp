@@ -74,6 +74,26 @@ const float pinvA[4][3] = {
 // C1 is for the first triplet of gratings close to the needle base
 // C2 is for the middle triplet of gratings
 // C3 is for the distal triplet of gratings
+// Calibration from Jung Hwa on 03/01/2017
+const float C1[3][3] = {
+    {0.000036238761280, 0.001146475598302, 0},
+    {-0.000999652118974, -0.000504585796859, 0},
+    {0.000959887953802, -0.000633480662472, 0}
+};
+
+const float C2[3][3] = {
+    { 0.000047504588766, 0.001262409363253, 0},
+    {-0.001168728013481, -0.000481887113260, 0},
+    {0.001117059829850, -0.000770957952875, 0}
+};
+
+const float C3[3][3] = {
+    { 0, 0, 0},
+    {0, 0, 0},
+    {0, 0, 0}
+};
+
+/*
 const float C1[3][3] ={
    	{0.000204950507949441, 0.00121646436986137, 0},
   	{-0.000995644401992136, -0.000537433208215571, 0},
@@ -88,6 +108,7 @@ const float C3[3][3] = {
    	{-0.000274220554606033, 0.00384379872980169, 0},
  	{-0.00265350320879051, 0.00008339400787445, 0},
    	{0.00229380432011879, -0.000955844410493895, 0}};
+*/
 
 
 // *** Module variable definitions *** //
@@ -96,8 +117,6 @@ float *baseWLarray;       // buffer for containing baseline wavelength
 
 // *** Shape sensing coefficients *** //
 float *est_coeff;
-
-char *data2send;
 
 // *** TCP Connection declarations *** //
 // TCP socket pointers for Interrogator
@@ -208,12 +227,12 @@ int readWavelength(float *inWLArray, int arrLen) {
          error("ERROR writing to socket");
         
     // read first 10 bytes data (including size information) and dump away
-    char *bufferSkip;
-    bufferSkip = (char *) malloc(sizeof(char)*DATA_LENGTH);
+    char bufferSkip[DATA_LENGTH];
+    //bufferSkip = (char *) malloc(sizeof(char)*DATA_LENGTH);
     n = read(sockfd,bufferSkip,DATA_LENGTH);
     if (n < 0) 
          error("ERROR reading from socket");
-    free(bufferSkip);
+    //free(bufferSkip);
 
     // read the data into bytes buffer
     char *buffer;
@@ -232,22 +251,23 @@ int readWavelength(float *inWLArray, int arrLen) {
     granularityf = (int *)granularity;
 
     char peak_temp[4];
-    int *peakf_temp;
+    int *peakf_temp = (int *) malloc(sizeof(int)*4);
     int wl_number=0;
 
     // Convert every 4 bytes into a float
     for(int h=0;h <= 44; h+=4) {
-        for(int j=0; j<4; j++) {
-            peak_temp[j] = buffer[j+88+h];
-        }
+        memcpy(peak_temp, &buffer[88+h], 4);
+        //  for(int j=0; j<4; j++) {
+        //      peak_temp[j] = buffer[j+88+h];
+        //  }
         peakf_temp = (int *)peak_temp; // this one is just dummy var
-        printf("%d, ", *peakf_temp);
+        //printf("%d, ", *peakf_temp);
         //store result into wavelength array
         wl_number=h/4;
         inWLArray[wl_number] = ((float)*peakf_temp)/(*granularityf); // store into allocated buffer
         //printf("%.8f\n", inWLArray[wl_number]);
     }
-    printf("\n");
+    //printf("\n");
 
     // free all allocated temporary buffers
     free(granularity);
@@ -356,13 +376,13 @@ int main(int argc, char* argv[]) {
 
 #ifdef CONNECT2HOLOLENS
     // initialize socket comm. to HoloLens
+    printf("Waiting for connection...\n");
     initHoloLensServer(20602);
 #endif
 
     // local variable definitions
     // counter for sending data to HoloLens at lower rate
     int commCounter = 0;
-    data2send = (char*) malloc(67 * sizeof(char));
 
     printf("Starting main loop\n");
     while (true) {
@@ -379,8 +399,10 @@ int main(int argc, char* argv[]) {
             readWavelength(WLarray,WLarrayLen);
             getNeedleShape(WLarray, WLarrayLen, baseWLarray, est_coeff);
             byte bytes[4*6];
-            float2Bytes(&est_coeff[0], &bytes[0]);
-
+            //float2Bytes(&est_coeff[0], &bytes[0]);
+            //printf("%f, %f, %f, %f, %f, %f\n", est_coeff[0], est_coeff[1], est_coeff[2], est_coeff[3], est_coeff[4], est_coeff[5]);
+            printf("%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", WLarray[0], WLarray[1], WLarray[2], WLarray[3], WLarray[4], WLarray[5],
+                                                                        WLarray[6], WLarray[7], WLarray[8], WLarray[9], WLarray[10], WLarray[11]);
 #ifdef CONNECT2HOLOLENS
             int write_result;
             write_result = write(newHoloSocketfd, est_coeff, 4*6);
@@ -388,7 +410,6 @@ int main(int argc, char* argv[]) {
 #endif
         }
         commCounter ++;
-        usleep(1000);
     }
     return 0;
 }
@@ -413,7 +434,6 @@ void signal_handler(int signum) {
             // free all allocated buffers 
             free(baseWLarray);
             free(WLarray);
-            free(data2send);
             free(est_coeff);
 
             printf("Ending ...\n");

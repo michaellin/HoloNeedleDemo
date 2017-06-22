@@ -86,21 +86,21 @@ const float pinvA[4][3] = {
 // C3 is for the distal triplet of gratings
 // Calibration from Jung Hwa on 03/01/2017
 const float C1[3][3] = {
-    {0.001004749918347, 0.001648826150037, 0},
-    {-0.000447508810993, 0.000138619978167, 0},
-    {0.001595006905954, -0.000190465927190, 0}
+    {-0.000748867336927, 0.001068881969116, 0},
+    {0.000149139340337, 0.001503803740640, 0},
+    {-0.001976798053222, 0.000365319953008, 0}
 };
 
 const float C2[3][3] = {
-    { 0.001213450860276, 0.001130395722237, 0},
-    {-0.000375022899496, -0.000690228256237, 0},
-    {0.002031000851725, -0.000959497088880, 0}
+    {-0.000873030745682, 0.002173139599615, 0},
+    {0.001842941061259, -0.000594529565956, 0},
+    {-0.003619990771172, 0.000367250476008, 0}
 };
 
 const float C3[3][3] = {
-    {0.001230857538706, 0.003029857734498, 0},
-    {-0.000880679712279, 0.000237674550854, 0},
-    {0.002783477294396, -0.000532555865665, 0}
+    {-0.001413614466484, -0.001629045053891, 0},
+    {0.000261312453896, -0.001086421100232, 0},
+    {0.001099139334677, -0.001165117978684, 0}
 };
 
 /*
@@ -312,15 +312,15 @@ void getNeedleShape(float *inWLArray, int arrLen,
  
    // Find curvatures
   float curv_xz[4] = {
-	dWL[1]*C1[0][0]+dWL[5]*C1[1][0]+dWL[9]*C1[2][0],
-	dWL[2]*C2[0][0]+dWL[6]*C2[1][0]+dWL[10]*C2[2][0],
-	dWL[3]*C3[0][0]+dWL[7]*C3[1][0]+dWL[11]*C3[2][0],
+	dWL[0]*C1[0][0]+dWL[2]*C1[1][0]+dWL[4]*C1[2][0],
+	dWL[1]*C2[0][0]+dWL[3]*C2[1][0]+dWL[6]*C2[2][0],
+	dWL[7]*C3[0][0]+dWL[9]*C3[1][0]+dWL[11]*C3[2][0],
         0                                         };
 
   float curv_yz[4] = {
-	dWL[1]*C1[0][1]+dWL[5]*C1[1][1]+dWL[9]*C1[2][1],
-	dWL[2]*C2[0][1]+dWL[6]*C2[1][1]+dWL[10]*C2[2][1],
-	dWL[3]*C3[0][1]+dWL[7]*C3[1][1]+dWL[11]*C3[2][1],
+	dWL[0]*C1[0][1]+dWL[2]*C1[1][1]+dWL[4]*C1[2][1],
+	dWL[1]*C2[0][1]+dWL[3]*C2[1][1]+dWL[6]*C2[2][1],
+	dWL[7]*C3[0][1]+dWL[9]*C3[1][1]+dWL[11]*C3[2][1],
         0                                         };
 
   // Fit into polynomial using pinvA and find the polynomial coefficients
@@ -330,9 +330,9 @@ void getNeedleShape(float *inWLArray, int arrLen,
   in_est_coeff[2] = pinvA[2][0]*curv_xz[0] + pinvA[2][1]*curv_xz[1] + pinvA[2][2]*curv_xz[2] + pinvA[2][3]*curv_xz[3];
 
   // put yz plane coefficient second
-  in_est_coeff[4] = pinvA[0][0]*curv_yz[0] + pinvA[0][1]*curv_yz[1] + pinvA[0][2]*curv_yz[2] + pinvA[0][3]*curv_yz[3];
-  in_est_coeff[5] = pinvA[1][0]*curv_yz[0] + pinvA[1][1]*curv_yz[1] + pinvA[1][2]*curv_yz[2] + pinvA[1][3]*curv_yz[3];
-  in_est_coeff[6] = pinvA[2][0]*curv_yz[0] + pinvA[2][1]*curv_yz[1] + pinvA[2][2]*curv_yz[2] + pinvA[2][3]*curv_yz[3];
+  in_est_coeff[3] = pinvA[0][0]*curv_yz[0] + pinvA[0][1]*curv_yz[1] + pinvA[0][2]*curv_yz[2] + pinvA[0][3]*curv_yz[3];
+  in_est_coeff[4] = pinvA[1][0]*curv_yz[0] + pinvA[1][1]*curv_yz[1] + pinvA[1][2]*curv_yz[2] + pinvA[1][3]*curv_yz[3];
+  in_est_coeff[5] = pinvA[2][0]*curv_yz[0] + pinvA[2][1]*curv_yz[1] + pinvA[2][2]*curv_yz[2] + pinvA[2][3]*curv_yz[3];
   
   free(dWL);
 }
@@ -443,7 +443,8 @@ int main(int argc, char* argv[]) {
             getNeedleShape(WLarray, WLarrayLen, baseWLarray, est_coeff);
             byte bytes[4*6];
             //float2Bytes(&est_coeff[0], &bytes[0]);
-            //printf("%f, %f, %f, %f, %f, %f\n", est_coeff[0], est_coeff[1], est_coeff[2], est_coeff[3], est_coeff[4], est_coeff[5]);
+            printf("%f, %f, %f, %f, %f, %f\n", est_coeff[0], est_coeff[1], est_coeff[2], est_coeff[3], est_coeff[4], est_coeff[5]);
+            //printf("%f, %f, %f, %f, %f, %f\n", WLarray[0]-baseWLarray[0], WLarray[4]-baseWLarray[4], WLarray[8]-baseWLarray[8], WLarray[3]-baseWLarray[3], WLarray[4]-baseWLarray[4], WLarray[5]-baseWLarray[5]);
             //printf("%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", WLarray[0], WLarray[1], WLarray[2], WLarray[3], WLarray[4], WLarray[5],
             //                                                            WLarray[6], WLarray[7], WLarray[8], WLarray[9], WLarray[10], WLarray[11]);
             //printf("%f\n", WLarray[11]);

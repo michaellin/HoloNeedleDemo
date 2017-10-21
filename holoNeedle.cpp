@@ -103,22 +103,20 @@ const float C3[3][3] = {
     {0.001099139334677, -0.001165117978684, 0}
 };
 
-/*
-const float C1[3][3] ={
-   	{0.000204950507949441, 0.00121646436986137, 0},
-  	{-0.000995644401992136, -0.000537433208215571, 0},
-   	{0.00115328503288612, -0.000607264513515554, 0}};
 
-const float C2[3][3] = {
-   	{0.000279227750906997, 0.00168804977004751, 0},
-  	{-0.000956617541852464, -0.000339882891191607, 0}, 
-   	{0.00150548652510142, -0.000374190927814751, 0}};
-
-const float C3[3][3] = {
-   	{-0.000274220554606033, 0.00384379872980169, 0},
- 	{-0.00265350320879051, 0.00008339400787445, 0},
-   	{0.00229380432011879, -0.000955844410493895, 0}};
-*/
+// Calibration matrix for wavelength to curvature reading. 
+// C calibrates all the gratings at once
+const float C[9][6] = {
+{2.1007, -30.7799, 1.2063, -22.5888, -1.7125, 3.3502},
+{11.3066, -23.6497, 7.3403, -18.7960, -5.0677, -3.1288},
+{19.7811, -8.3739, 13.6011, -9.9832, -4.6852, -14.3471},
+{9.8821, 45.5031, 7.0307, 30.9025, -1.1298, -15.0839},
+{-6.7334, 22.5959, -3.5591, 17.5402, 6.3271, 0.8480},
+{-20.3822, 3.3775, -14.1323, 7.2099, 4.4038, 18.4040},
+{-25.2809, -30.8675, -17.5649, -17.6012, 5.4307, 23.4698},
+{-5.1552, 9.2662, -4.8202, 8.0941, -3.0109, 5.3219},
+{11.6203, 6.2016, 8.9900, 1.2319, 0.6455, -14.5923}
+};
 
 
 // *** Module variable definitions *** //
@@ -309,6 +307,8 @@ void getNeedleShape(float *inWLArray, int arrLen,
   {
 	dWL[i]=inWLArray[i]-inbaseWL_array[i];
   } 
+
+  // Find all curvatures
  
    // Find curvatures
   float curv_xz[4] = {
@@ -443,7 +443,7 @@ int main(int argc, char* argv[]) {
             getNeedleShape(WLarray, WLarrayLen, baseWLarray, est_coeff);
             byte bytes[4*6];
             //float2Bytes(&est_coeff[0], &bytes[0]);
-            printf("%f, %f, %f, %f, %f, %f\n", est_coeff[0], est_coeff[1], est_coeff[2], est_coeff[3], est_coeff[4], est_coeff[5]);
+            printf("%f, %f, %f, %f, %f, %f\n", 100*est_coeff[0], 100*est_coeff[1], 100*est_coeff[2], 5*est_coeff[3], 5*est_coeff[4], 5*est_coeff[5]);
             //printf("%f, %f, %f, %f, %f, %f\n", WLarray[0]-baseWLarray[0], WLarray[4]-baseWLarray[4], WLarray[8]-baseWLarray[8], WLarray[3]-baseWLarray[3], WLarray[4]-baseWLarray[4], WLarray[5]-baseWLarray[5]);
             //printf("%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", WLarray[0], WLarray[1], WLarray[2], WLarray[3], WLarray[4], WLarray[5],
             //                                                            WLarray[6], WLarray[7], WLarray[8], WLarray[9], WLarray[10], WLarray[11]);

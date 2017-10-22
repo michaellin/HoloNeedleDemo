@@ -319,7 +319,7 @@ void getNeedleShape(float *inWLArray, int arrLen,
 	// K = dWL * C
 	// dWL = [dWL[0] dWL[4] dWL[8] dWL[1] dWL[5] dWL[9] dWL[2] dWL[6] dWL[10]]
 	float dWLt[9] = {dWL[0], dWL[4], dWL[8], dWL[1], dWL[5], dWL[9], dWL[2], dWL[6], dWL[10]};
-  printf("%f, %f, %f, %f, %f, %f, %f, %f, %f\n", dWLt[0], dWLt[1], dWLt[2], dWLt[3], dWLt[4], dWLt[5], dWLt[6], dWLt[7], dWLt[8]);
+  //printf("%f, %f, %f, %f, %f, %f, %f, %f, %f\n", dWLt[0], dWLt[1], dWLt[2], dWLt[3], dWLt[4], dWLt[5], dWLt[6], dWLt[7], dWLt[8]);
 	// curvs = [Kx1 Ky1 Kx2 Ky2 Kx3 Ky3] where 1 is close to base and 3 is close to tip
 	float curvs[6] = {
 		dWLt[0]*C[0][0] + dWLt[1]*C[1][0] + dWLt[2]*C[2][0] + dWLt[3]*C[3][0] + dWLt[4]*C[4][0] + dWLt[5]*C[5][0] + dWLt[6]*C[6][0] + dWLt[7]*C[7][0] + dWLt[8]*C[8][0],
@@ -453,7 +453,7 @@ int main(int argc, char* argv[]) {
             getNeedleShape(WLarray, WLarrayLen, baseWLarray, est_coeff);
             byte bytes[4*4];
             //float2Bytes(&est_coeff[0], &bytes[0]);
-            //printf("%f, %f, %f, %f\n", est_coeff[0], est_coeff[1], est_coeff[2], est_coeff[3]);
+            printf("%f, %f, %f, %f\n", est_coeff[0], est_coeff[1], est_coeff[2], est_coeff[3]);
             //printf("%f, %f, %f, %f, %f, %f\n", WLarray[0]-baseWLarray[0], WLarray[4]-baseWLarray[4], WLarray[8]-baseWLarray[8], WLarray[3]-baseWLarray[3], WLarray[4]-baseWLarray[4], WLarray[5]-baseWLarray[5]);
             //printf("%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", WLarray[0], WLarray[1], WLarray[2], WLarray[3], WLarray[4], WLarray[5],
             //                                                            WLarray[6], WLarray[7], WLarray[8], WLarray[9], WLarray[10], WLarray[11]);

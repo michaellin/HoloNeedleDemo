@@ -79,6 +79,13 @@ const float pinvA[4][3] = {
     {0.098086714707812, -0.040364866387243, 0.001853487556038},
     {0.005867116833951, -0.002415066620459, 0.000110916098118} };
 #endif
+// This matrix was found using sensor locations 0.02015, 0.04365, 0.11615 m
+// from the base and doing a pinv to get linear fitting of curvature
+// pinvX * [K1;K2;K3] = [a;b]
+const float pinvX[2][3] = {
+	{-7.953675663083631, -3.261339811640989, 11.215015474724614},
+	{0.810421311857300, 0.528959366368266, -0.339380678225565}
+};
 
 // Calibration matrices for wavelength to curvature reading. 
 // C1 is for the first triplet of gratings close to the needle base
@@ -309,30 +316,46 @@ void getNeedleShape(float *inWLArray, int arrLen,
   } 
 
   // Find all curvatures
+	// K = dWL * C
+	// dWL = [dWL[0] dWL[4] dWL[8] dWL[1] dWL[5] dWL[9] dWL[2] dWL[6] dWL[10]]
+	float dWLt = {dWL[0], dWL[4], dWL[8], dWL[1], dWL[5], dWL[9], dWL[2], dWL[6], dWL[10]};
+	// curvs = [Kx1 Ky1 Kx2 Ky2 Kx3 Ky3] where 1 is close to base and 3 is close to tip
+	float curvs[6] = {
+		dWLt[0]*C[0][0] + dWLt[1]*C[1][0] + dWLt[2]*C[2][0] + dWLt[3]*C[3][0] + dWLt[4]*C[4][0] + dWLt[5]*C[5][0] + dWLt[6]*C[6][0] + dWLt[7]*C[7][0] + dWLt[8]*C[8][0],
+		dWLt[0]*C[0][1] + dWLt[1]*C[1][1] + dWLt[2]*C[2][1] + dWLt[3]*C[3][1] + dWLt[4]*C[4][1] + dWLt[5]*C[5][1] + dWLt[6]*C[6][1] + dWLt[7]*C[7][1] + dWLt[8]*C[8][1],
+		dWLt[0]*C[0][2] + dWLt[1]*C[1][2] + dWLt[2]*C[2][2] + dWLt[3]*C[3][2] + dWLt[4]*C[4][2] + dWLt[5]*C[5][2] + dWLt[6]*C[6][2] + dWLt[7]*C[7][2] + dWLt[8]*C[8][2],
+		dWLt[0]*C[0][3] + dWLt[1]*C[1][3] + dWLt[2]*C[2][3] + dWLt[3]*C[3][3] + dWLt[4]*C[4][3] + dWLt[5]*C[5][3] + dWLt[6]*C[6][3] + dWLt[7]*C[7][3] + dWLt[8]*C[8][3],
+		dWLt[0]*C[0][4] + dWLt[1]*C[1][4] + dWLt[2]*C[2][4] + dWLt[3]*C[3][4] + dWLt[4]*C[4][4] + dWLt[5]*C[5][4] + dWLt[6]*C[6][4] + dWLt[7]*C[7][4] + dWLt[8]*C[8][4],
+		dWLt[0]*C[0][5] + dWLt[1]*C[1][5] + dWLt[2]*C[2][5] + dWLt[3]*C[3][5] + dWLt[4]*C[4][5] + dWLt[5]*C[5][5] + dWLt[6]*C[6][5] + dWLt[7]*C[7][5] + dWLt[8]*C[8][5]
+	};
  
    // Find curvatures
-  float curv_xz[4] = {
-	dWL[0]*C1[0][0]+dWL[2]*C1[1][0]+dWL[4]*C1[2][0],
-	dWL[1]*C2[0][0]+dWL[3]*C2[1][0]+dWL[6]*C2[2][0],
-	dWL[7]*C3[0][0]+dWL[9]*C3[1][0]+dWL[11]*C3[2][0],
-        0                                         };
+//float curv_xz[4] = {
+//dWL[0]*C1[0][0]+dWL[2]*C1[1][0]+dWL[4]*C1[2][0],
+//dWL[1]*C2[0][0]+dWL[3]*C2[1][0]+dWL[6]*C2[2][0],
+//dWL[7]*C3[0][0]+dWL[9]*C3[1][0]+dWL[11]*C3[2][0],
+//      0                                         };
 
-  float curv_yz[4] = {
-	dWL[0]*C1[0][1]+dWL[2]*C1[1][1]+dWL[4]*C1[2][1],
-	dWL[1]*C2[0][1]+dWL[3]*C2[1][1]+dWL[6]*C2[2][1],
-	dWL[7]*C3[0][1]+dWL[9]*C3[1][1]+dWL[11]*C3[2][1],
-        0                                         };
+//float curv_yz[4] = {
+//dWL[0]*C1[0][1]+dWL[2]*C1[1][1]+dWL[4]*C1[2][1],
+//dWL[1]*C2[0][1]+dWL[3]*C2[1][1]+dWL[6]*C2[2][1],
+//dWL[7]*C3[0][1]+dWL[9]*C3[1][1]+dWL[11]*C3[2][1],
+//      0                                         };
 
   // Fit into polynomial using pinvA and find the polynomial coefficients
   // put xz plane coefficients first
-  in_est_coeff[0] = pinvA[0][0]*curv_xz[0] + pinvA[0][1]*curv_xz[1] + pinvA[0][2]*curv_xz[2] + pinvA[0][3]*curv_xz[3];
-  in_est_coeff[1] = pinvA[1][0]*curv_xz[0] + pinvA[1][1]*curv_xz[1] + pinvA[1][2]*curv_xz[2] + pinvA[1][3]*curv_xz[3];
-  in_est_coeff[2] = pinvA[2][0]*curv_xz[0] + pinvA[2][1]*curv_xz[1] + pinvA[2][2]*curv_xz[2] + pinvA[2][3]*curv_xz[3];
+//in_est_coeff[0] = pinvA[0][0]*curv_xz[0] + pinvA[0][1]*curv_xz[1] + pinvA[0][2]*curv_xz[2] + pinvA[0][3]*curv_xz[3];
+//in_est_coeff[1] = pinvA[1][0]*curv_xz[0] + pinvA[1][1]*curv_xz[1] + pinvA[1][2]*curv_xz[2] + pinvA[1][3]*curv_xz[3];
+//in_est_coeff[2] = pinvA[2][0]*curv_xz[0] + pinvA[2][1]*curv_xz[1] + pinvA[2][2]*curv_xz[2] + pinvA[2][3]*curv_xz[3];
+	in_est_coeff[0] = pinvX[0][0]*curvs[0] + pinvX[0][1]*curvs[2] + pinvX[0][2]*curvs[4];
+	in_est_coeff[1] = pinvX[1][0]*curvs[0] + pinvX[1][1]*curvs[2] + pinvX[1][2]*curvs[4];
 
   // put yz plane coefficient second
-  in_est_coeff[3] = pinvA[0][0]*curv_yz[0] + pinvA[0][1]*curv_yz[1] + pinvA[0][2]*curv_yz[2] + pinvA[0][3]*curv_yz[3];
-  in_est_coeff[4] = pinvA[1][0]*curv_yz[0] + pinvA[1][1]*curv_yz[1] + pinvA[1][2]*curv_yz[2] + pinvA[1][3]*curv_yz[3];
-  in_est_coeff[5] = pinvA[2][0]*curv_yz[0] + pinvA[2][1]*curv_yz[1] + pinvA[2][2]*curv_yz[2] + pinvA[2][3]*curv_yz[3];
+//in_est_coeff[3] = pinvA[0][0]*curv_yz[0] + pinvA[0][1]*curv_yz[1] + pinvA[0][2]*curv_yz[2] + pinvA[0][3]*curv_yz[3];
+//in_est_coeff[4] = pinvA[1][0]*curv_yz[0] + pinvA[1][1]*curv_yz[1] + pinvA[1][2]*curv_yz[2] + pinvA[1][3]*curv_yz[3];
+//in_est_coeff[5] = pinvA[2][0]*curv_yz[0] + pinvA[2][1]*curv_yz[1] + pinvA[2][2]*curv_yz[2] + pinvA[2][3]*curv_yz[3];
+	in_est_coeff[2] = pinvX[0][0]*curvs[1] + pinvX[0][1]*curvs[3] + pinvX[0][2]*curvs[5];
+	in_est_coeff[3] = pinvX[1][0]*curvs[1] + pinvX[1][1]*curvs[3] + pinvX[1][2]*curvs[5];
   
   free(dWL);
 }
@@ -386,17 +409,9 @@ int main(int argc, char* argv[]) {
 
     memset(WLarray, 0, sizeof(float)*12);
     memset(baseWLarray, 0, sizeof(float)*12);
-#ifdef FOURTH_POLY
-    est_coeff = (float*) malloc(sizeof(float)*6);
+    est_coeff = (float*) malloc(sizeof(float)*4);
     //est_yz_coeff = (float*) malloc(sizeof(float)*3);
-    memset(est_coeff, 0, sizeof(float)*6);
-#endif
-#ifdef FIFTH_POLY
-    est_xz_coeff = (float*) malloc(sizeof(float)*4);
-    est_yz_coeff = (float*) malloc(sizeof(float)*4);
-    memset(est_yz_coeff, 0, sizeof(float)*4);
-    memset(est_xz_coeff, 0, sizeof(float)*4);
-#endif
+    memset(est_coeff, 0, sizeof(float)*4);
 
 #ifdef CONNECT2NEEDLE
     // initialize socket comm. to interrogator
@@ -431,19 +446,13 @@ int main(int argc, char* argv[]) {
       //clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
         if (commCounter % 10 == 0) { 
             memset(WLarray, 0, sizeof(float)*12);
-#ifdef FOURTH_POLY
-            memset(est_coeff, 0, sizeof(float)*6);
-#endif
-#ifdef FIFTH_POLY
-            memset(est_yz_coeff, 0, sizeof(float)*4);
-            memset(est_xz_coeff, 0, sizeof(float)*4);
-#endif
+            memset(est_coeff, 0, sizeof(float)*4);
 
             readWavelength(WLarray,WLarrayLen);
             getNeedleShape(WLarray, WLarrayLen, baseWLarray, est_coeff);
-            byte bytes[4*6];
+            byte bytes[4*4];
             //float2Bytes(&est_coeff[0], &bytes[0]);
-            printf("%f, %f, %f, %f, %f, %f\n", 100*est_coeff[0], 100*est_coeff[1], 100*est_coeff[2], 5*est_coeff[3], 5*est_coeff[4], 5*est_coeff[5]);
+            printf("%f, %f, %f, %f\n", est_coeff[0], est_coeff[1], est_coeff[2], est_coeff[3]);
             //printf("%f, %f, %f, %f, %f, %f\n", WLarray[0]-baseWLarray[0], WLarray[4]-baseWLarray[4], WLarray[8]-baseWLarray[8], WLarray[3]-baseWLarray[3], WLarray[4]-baseWLarray[4], WLarray[5]-baseWLarray[5]);
             //printf("%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", WLarray[0], WLarray[1], WLarray[2], WLarray[3], WLarray[4], WLarray[5],
             //                                                            WLarray[6], WLarray[7], WLarray[8], WLarray[9], WLarray[10], WLarray[11]);
@@ -451,7 +460,7 @@ int main(int argc, char* argv[]) {
 
 #ifdef CONNECT2HOLOLENS
             int write_result;
-            write_result = write(newHoloSocketfd, est_coeff, 4*6);
+            write_result = write(newHoloSocketfd, est_coeff, 4*4);
             if (write_result < 0) error("ERROR writing to socket");
 #endif
         }

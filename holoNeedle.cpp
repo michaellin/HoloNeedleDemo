@@ -309,6 +309,7 @@ void getNeedleShape(float *inWLArray, int arrLen,
   {
 	dWL[i]=inWLArray[i]-inbaseWL_array[i];
   } 
+  printf("%f, %f, %f, %f, %f, %f, %f, %f, %f\n", dWL[0], dWL[4], dWL[8], dWL[1], dWL[5], dWL[9], dWL[2], dWL[6], dWL[10]);
  
    // Find curvatures
   float curv_xz[4] = {

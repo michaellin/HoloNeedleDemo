@@ -453,7 +453,7 @@ int main(int argc, char* argv[]) {
             getNeedleShape(WLarray, WLarrayLen, baseWLarray, est_coeff);
             byte bytes[4*4];
             //float2Bytes(&est_coeff[0], &bytes[0]);
-            printf("%f, %f, %f, %f\n", est_coeff[0], est_coeff[1], est_coeff[2], est_coeff[3]);
+            //printf("%f, %f, %f, %f\n", est_coeff[0], est_coeff[1], est_coeff[2], est_coeff[3]);
             //printf("%f, %f, %f, %f, %f, %f\n", WLarray[0]-baseWLarray[0], WLarray[4]-baseWLarray[4], WLarray[8]-baseWLarray[8], WLarray[3]-baseWLarray[3], WLarray[4]-baseWLarray[4], WLarray[5]-baseWLarray[5]);
             //printf("%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", WLarray[0], WLarray[1], WLarray[2], WLarray[3], WLarray[4], WLarray[5],
             //                                                            WLarray[6], WLarray[7], WLarray[8], WLarray[9], WLarray[10], WLarray[11]);

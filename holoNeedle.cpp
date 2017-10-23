@@ -89,25 +89,26 @@ const float pinvX[2][3] = {
 
 // Calibration matrices for wavelength to curvature reading. 
 // C1 is for the first triplet of gratings close to the needle base
+
 // C2 is for the middle triplet of gratings
 // C3 is for the distal triplet of gratings
 // Calibration from Jung Hwa on 03/01/2017
 const float C1[3][2] = {
-   {-1.0290, -0.8797},
-   {1.1417, 0.5820},
-   {1.4075, -2.1696}
+	{0.09238049, -0.6953908},
+  {2.23087992, 0.76094226}
+  {2.42069784, -2.00314275}
 };
 
 const float C2[3][2] = {
-   {-3.3000, -0.0624},
-   {-0.8767, 1.1796},
-   {-0.6360, -1.6859}
+	{-2.57872425, -0.09821298},
+	{-0.23364526, 1.14637832},
+	{-0.0364919, -1.71689875}
 };
 
 const float C3[3][2] = {
-   {-0.1710, 3.5014},
-   {2.1964, 5.2081},
-   {2.4804, 2.0529}
+	{-0.60890451, 3.65359086},
+	{1.67406584, 5.38951768},
+	{2.05849908, 2.19944475}
 };
 
 // Calibration matrix for wavelength to curvature reading. 

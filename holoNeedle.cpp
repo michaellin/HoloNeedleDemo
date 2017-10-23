@@ -92,24 +92,23 @@ const float pinvX[2][3] = {
 // C2 is for the middle triplet of gratings
 // C3 is for the distal triplet of gratings
 // Calibration from Jung Hwa on 03/01/2017
-const float C1[3][3] = {
-    {-0.000748867336927, 0.001068881969116, 0},
-    {0.000149139340337, 0.001503803740640, 0},
-    {-0.001976798053222, 0.000365319953008, 0}
+const float C1[3][2] = {
+   {-1.0290, -0.8797},
+   {1.1417, 0.5820},
+   {1.4075, -2.1696}
 };
 
-const float C2[3][3] = {
-    {-0.000873030745682, 0.002173139599615, 0},
-    {0.001842941061259, -0.000594529565956, 0},
-    {-0.003619990771172, 0.000367250476008, 0}
+const float C2[3][2] = {
+   {-3.3000, -0.0624},
+   {-0.8767, 1.1796},
+   {-0.6360, -1.6859}
 };
 
-const float C3[3][3] = {
-    {-0.001413614466484, -0.001629045053891, 0},
-    {0.000261312453896, -0.001086421100232, 0},
-    {0.001099139334677, -0.001165117978684, 0}
+const float C3[3][2] = {
+   {-0.1710, 3.5014},
+   {2.1964, 5.2081},
+   {2.4804, 2.0529}
 };
-
 
 // Calibration matrix for wavelength to curvature reading. 
 // C calibrates all the gratings at once
@@ -315,20 +314,32 @@ void getNeedleShape(float *inWLArray, int arrLen,
 	dWL[i]=inWLArray[i]-inbaseWL_array[i];
   } 
 
-  // Find all curvatures
-	// K = dWL * C
-	// dWL = [dWL[0] dWL[4] dWL[8] dWL[1] dWL[5] dWL[9] dWL[2] dWL[6] dWL[10]]
+  /** Find all curvatures
+	 * K = dWL * C
+	 * dWL = [dWL[0] dWL[4] dWL[8] dWL[1] dWL[5] dWL[9] dWL[2] dWL[6] dWL[10]]
+	 **/
 	float dWLt[9] = {dWL[0], dWL[4], dWL[8], dWL[1], dWL[5], dWL[9], dWL[2], dWL[6], dWL[10]};
   //printf("%f, %f, %f, %f, %f, %f, %f, %f, %f\n", dWLt[0], dWLt[1], dWLt[2], dWLt[3], dWLt[4], dWLt[5], dWLt[6], dWLt[7], dWLt[8]);
-	// curvs = [Kx1 Ky1 Kx2 Ky2 Kx3 Ky3] where 1 is close to base and 3 is close to tip
+
+	/* curvs = [Kx1 Ky1 Kx2 Ky2 Kx3 Ky3] where 1 is close to base and 3 is close to tip */
+//float curvs[6] = {
+//	dWLt[0]*C[0][0] + dWLt[1]*C[1][0] + dWLt[2]*C[2][0] + dWLt[3]*C[3][0] + dWLt[4]*C[4][0] + dWLt[5]*C[5][0] + dWLt[6]*C[6][0] + dWLt[7]*C[7][0] + dWLt[8]*C[8][0],
+//	dWLt[0]*C[0][1] + dWLt[1]*C[1][1] + dWLt[2]*C[2][1] + dWLt[3]*C[3][1] + dWLt[4]*C[4][1] + dWLt[5]*C[5][1] + dWLt[6]*C[6][1] + dWLt[7]*C[7][1] + dWLt[8]*C[8][1],
+//	dWLt[0]*C[0][2] + dWLt[1]*C[1][2] + dWLt[2]*C[2][2] + dWLt[3]*C[3][2] + dWLt[4]*C[4][2] + dWLt[5]*C[5][2] + dWLt[6]*C[6][2] + dWLt[7]*C[7][2] + dWLt[8]*C[8][2],
+//	dWLt[0]*C[0][3] + dWLt[1]*C[1][3] + dWLt[2]*C[2][3] + dWLt[3]*C[3][3] + dWLt[4]*C[4][3] + dWLt[5]*C[5][3] + dWLt[6]*C[6][3] + dWLt[7]*C[7][3] + dWLt[8]*C[8][3],
+//	dWLt[0]*C[0][4] + dWLt[1]*C[1][4] + dWLt[2]*C[2][4] + dWLt[3]*C[3][4] + dWLt[4]*C[4][4] + dWLt[5]*C[5][4] + dWLt[6]*C[6][4] + dWLt[7]*C[7][4] + dWLt[8]*C[8][4],
+//	dWLt[0]*C[0][5] + dWLt[1]*C[1][5] + dWLt[2]*C[2][5] + dWLt[3]*C[3][5] + dWLt[4]*C[4][5] + dWLt[5]*C[5][5] + dWLt[6]*C[6][5] + dWLt[7]*C[7][5] + dWLt[8]*C[8][5]
+//};
+
+	/* curvs = [Kx1 Ky1 Kx2 Ky2 Kx3 Ky3] where 1 is close to base and 3 is close to tip */
 	float curvs[6] = {
-		dWLt[0]*C[0][0] + dWLt[1]*C[1][0] + dWLt[2]*C[2][0] + dWLt[3]*C[3][0] + dWLt[4]*C[4][0] + dWLt[5]*C[5][0] + dWLt[6]*C[6][0] + dWLt[7]*C[7][0] + dWLt[8]*C[8][0],
-		dWLt[0]*C[0][1] + dWLt[1]*C[1][1] + dWLt[2]*C[2][1] + dWLt[3]*C[3][1] + dWLt[4]*C[4][1] + dWLt[5]*C[5][1] + dWLt[6]*C[6][1] + dWLt[7]*C[7][1] + dWLt[8]*C[8][1],
-		dWLt[0]*C[0][2] + dWLt[1]*C[1][2] + dWLt[2]*C[2][2] + dWLt[3]*C[3][2] + dWLt[4]*C[4][2] + dWLt[5]*C[5][2] + dWLt[6]*C[6][2] + dWLt[7]*C[7][2] + dWLt[8]*C[8][2],
-		dWLt[0]*C[0][3] + dWLt[1]*C[1][3] + dWLt[2]*C[2][3] + dWLt[3]*C[3][3] + dWLt[4]*C[4][3] + dWLt[5]*C[5][3] + dWLt[6]*C[6][3] + dWLt[7]*C[7][3] + dWLt[8]*C[8][3],
-		dWLt[0]*C[0][4] + dWLt[1]*C[1][4] + dWLt[2]*C[2][4] + dWLt[3]*C[3][4] + dWLt[4]*C[4][4] + dWLt[5]*C[5][4] + dWLt[6]*C[6][4] + dWLt[7]*C[7][4] + dWLt[8]*C[8][4],
-		dWLt[0]*C[0][5] + dWLt[1]*C[1][5] + dWLt[2]*C[2][5] + dWLt[3]*C[3][5] + dWLt[4]*C[4][5] + dWLt[5]*C[5][5] + dWLt[6]*C[6][5] + dWLt[7]*C[7][5] + dWLt[8]*C[8][5]
-	};
+		dWLt[0]*C1[0][0] + dWLt[4]*C1[1][0] + dWLt[8]*C1[2][0],
+		dWLt[0]*C1[0][1] + dWLt[4]*C1[1][1] + dWLt[8]*C1[2][1],
+		dWLt[1]*C2[0][0] + dWLt[5]*C2[1][0] + dWLt[9]*C2[2][0],
+		dWLt[1]*C2[0][1] + dWLt[5]*C2[1][1] + dWLt[9]*C2[2][1],
+		dWLt[2]*C3[0][0] + dWLt[6]*C3[1][0] + dWLt[10]*C3[2][0],
+		dWLt[2]*C3[0][1] + dWLt[6]*C3[1][1] + dWLt[10]*C3[2][1],
+	}
  
    // Find curvatures
 //float curv_xz[4] = {

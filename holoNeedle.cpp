@@ -334,12 +334,12 @@ void getNeedleShape(float *inWLArray, int arrLen,
 
 	/* curvs = [Kx1 Ky1 Kx2 Ky2 Kx3 Ky3] where 1 is close to base and 3 is close to tip */
 	float curvs[6] = {
-		dWLt[0]*C1[0][0] + dWLt[4]*C1[1][0] + dWLt[8]*C1[2][0],
-		dWLt[0]*C1[0][1] + dWLt[4]*C1[1][1] + dWLt[8]*C1[2][1],
-		dWLt[1]*C2[0][0] + dWLt[5]*C2[1][0] + dWLt[9]*C2[2][0],
-		dWLt[1]*C2[0][1] + dWLt[5]*C2[1][1] + dWLt[9]*C2[2][1],
-		dWLt[2]*C3[0][0] + dWLt[6]*C3[1][0] + dWLt[10]*C3[2][0],
-		dWLt[2]*C3[0][1] + dWLt[6]*C3[1][1] + dWLt[10]*C3[2][1],
+		dWLt[0]*C1[0][0] + dWLt[1]*C1[1][0] + dWLt[2]*C1[2][0],
+		dWLt[0]*C1[0][1] + dWLt[1]*C1[1][1] + dWLt[2]*C1[2][1],
+		dWLt[3]*C2[0][0] + dWLt[4]*C2[1][0] + dWLt[5]*C2[2][0],
+		dWLt[3]*C2[0][1] + dWLt[4]*C2[1][1] + dWLt[5]*C2[2][1],
+		dWLt[6]*C3[0][0] + dWLt[7]*C3[1][0] + dWLt[9]*C3[2][0],
+		dWLt[6]*C3[0][1] + dWLt[7]*C3[1][1] + dWLt[9]*C3[2][1],
 	}
  
    // Find curvatures
